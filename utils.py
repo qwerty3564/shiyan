@@ -1802,8 +1802,8 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
             get_score = operator.itemgetter(*inputs['idx'].tolist())
             step_score = torch.tensor(get_score(loss_g_gap))
             pruner.update(step_score, inputs['idx'])
-        if e!=0:
-            print(f'修剪前：{len(pruner.cur_index)}')
+        # if e!=0:
+        print(f'修剪前：{len(pruner.cur_index)}')
         pruner.prune()
         print(f'修剪后：{len(pruner.cur_index)}')
         sampler = pruner.get_sampler()
@@ -1856,7 +1856,7 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
 
             iter_num += 1
         epoch_length.close()
-        print(f"********微调epoch{epoch}********")
+        print(f"********微调epoch{epoch}********预训练结束")
 
         train_epoch_iterator2 = None
         print(f"开始训练：数据：{len(train_epoch_iterator)}")
@@ -1877,6 +1877,7 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
             # del model_lp
             # iterator = iter(train_epoch_iterator2)
             # trange = range(len(train_epoch_iterator2))
+
             print("开始10轮训练")
             for epoch in range(steps):
                 metric_batch = {}
