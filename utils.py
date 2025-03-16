@@ -1654,7 +1654,7 @@ def  train_ft_loop3(config, model, train_epoch_iterator,eval_epoch_iterator, opt
     log.info(s)
 
 #先训练一轮，载挑选百分之50的数据，再训练10轮，其中每轮数据逐渐减少百分之10
-def  train_ft_loop3(config, model, train_epoch_iterator,eval_epoch_iterator, optimizer, device, log,trainset):
+def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, optimizer, device, log,trainset):
     """
     每个epoch后根据损失颗粒选择50%
     example : !python traindata.py --dataset mrpc --seed 3404 --epoch 10 --reg 5e-7 --weight_decay 0.001 --target_ratio 0.5
@@ -1872,6 +1872,7 @@ def  train_ft_loop3(config, model, train_epoch_iterator,eval_epoch_iterator, opt
             model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
             model_lp.to(next(model.parameters()).device)
                 # 获取剪之后的数据，data_p为剪枝对象，创建之前已经传好了ratio
+            data_p = GLUEPruner(dataset=trainset, ratio=0.5)
             train_epoch_iterator2 = get_epoch_dataloader(model_lp, data_p, 0)
             # del model_lp
             # iterator = iter(train_epoch_iterator2)
@@ -1933,7 +1934,7 @@ def  train_ft_loop3(config, model, train_epoch_iterator,eval_epoch_iterator, opt
                 epoch_length.close()
                 print(f"********微调epoch{epoch}********")
                 print(f"第{epoch}减少百分之10的数据")
-                train_epoch_iterator2 = get_epoch_dataloader(model_lp, data_p, 0,train_epoch_iterator2)
+                train_epoch_iterator2 = get_epoch_dataloader_rely(model_lp, data_p, 0,train_epoch_iterator2)
                 eval_loop()
 
             # epoch_length = tqdm(total=len(train_epoch_iterator2), desc=f"epoch {epoch}")
@@ -1944,7 +1945,7 @@ def  train_ft_loop3(config, model, train_epoch_iterator,eval_epoch_iterator, opt
     # log.info(s)
 
 
-def get_epoch_dataloader(model_lp, pruner, e,train_iterator):
+def get_epoch_dataloader_rely(model_lp, pruner, e,train_iterator):
         print("开始逐渐减少百分之10的数据")
         loss_g_before = {}
         iterator = iter(train_iterator)
