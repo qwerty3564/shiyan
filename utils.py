@@ -1879,7 +1879,7 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
             # trange = range(len(train_epoch_iterator2))
 
             print("开始10轮训练")
-            for epoch in range(steps):
+            for epoch in range(10):
                 metric_batch = {}
                 metric_batch['loss'] = []
                 if model.metric != None:
