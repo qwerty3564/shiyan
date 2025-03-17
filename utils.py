@@ -1749,8 +1749,8 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
 
     # data pruning
     # data_p = GLUEPruner(dataset=trainset, ratio=config.target_ratio)
-    data_p = GLUEPruner(dataset=trainset, ratio=1)
-    data_p.prune()
+    # data_p = GLUEPruner(dataset=trainset, ratio=1)
+    # data_p.prune()
     train_iterator = train_epoch_iterator
     model_checkpoint = config.model
     task = config.dataset
@@ -1819,15 +1819,15 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
         if model.metric_1 != None:
             metric_batch[f"{model.metric_1.__class__.__name__}"] = []
         # if epoch%2==0:
-            model_lp = load_model(model_checkpoint, task, device)
-            model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
-            model_lp.to(next(model.parameters()).device)
+        #     model_lp = load_model(model_checkpoint, task, device)
+        #     model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
+        #     model_lp.to(next(model.parameters()).device)
             # 获取剪之后的数据，data_p为剪枝对象，创建之前已经传好了ratio
-            train_epoch_iterator2 = get_epoch_dataloader(model_lp, data_p, 0)
-            del model_lp
-        iterator = iter(train_epoch_iterator2)
-        trange = range(len(train_epoch_iterator2))
-        epoch_length = tqdm(total=len(train_epoch_iterator2), desc=f"epoch {epoch}")
+            # train_epoch_iterator2 = get_epoch_dataloader(model_lp, data_p, 0)
+            # del model_lp
+        iterator = iter(train_epoch_iterator)
+        trange = range(len(train_epoch_iterator))
+        epoch_length = tqdm(total=len(train_epoch_iterator), desc=f"epoch {epoch}")
         for step in trange:
             epoch_length.update(1)
             inputs = prepare_inputs(next(iterator), device)
@@ -1873,6 +1873,7 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
             model_lp.to(next(model.parameters()).device)
                 # 获取剪之后的数据，data_p为剪枝对象，创建之前已经传好了ratio
             data_p = GLUEPruner(dataset=trainset, ratio=0.5)
+            data_p.prune()
             train_epoch_iterator2 = get_epoch_dataloader(model_lp, data_p, 0)
             # del model_lp
             # iterator = iter(train_epoch_iterator2)
@@ -1935,6 +1936,9 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
                 epoch_length.close()
                 print(f"********微调epoch{epoch}********")
                 print(f"第{epoch}减少百分之10的数据")
+                data_p = GLUEPruner(dataset=trainset, ratio=0.9)
+                data_p.prune()
+
                 train_epoch_iterator2 = get_epoch_dataloader_rely(model_lp, data_p, 0,train_epoch_iterator2)
                 eval_loop()
 
@@ -1985,15 +1989,15 @@ def get_epoch_dataloader_rely(model_lp, pruner, e,train_iterator):
         keys = sorted(loss_g_before.keys())
         loss_g_gap = {key: loss_g_after[key] - loss_g_before[key] for key in keys}
         del model_lp
-        iterator = iter(train_epoch_iterator)
-        # trange = range(len(train_epoch_iterator))
-        trange = range(1)
+        iterator = iter(train_iterator)
+        trange = range(len(train_iterator))
+        # trange = range(1)
         for step in trange:
             inputs = prepare_inputs(next(iterator), device)
             get_score = operator.itemgetter(*inputs['idx'].tolist())
             step_score = torch.tensor(get_score(loss_g_gap))
             pruner.update(step_score, inputs['idx'])
-        if e!=0:
+
             print(f'修剪前：{len(pruner.cur_index)}')
         pruner.prune()
         print(f'修剪后：{len(pruner.cur_index)}')

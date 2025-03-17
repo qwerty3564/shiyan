@@ -21,6 +21,7 @@ class GLUEPruner():
     def update(self, values,index):
         self.cur_batch_index=index
         s=torch.abs(values.to(dtype=self.scores.dtype).cpu())
+        # 更新分数，对传进来的样本对应的索引更新
         self.scores[self.cur_batch_index.cpu()]=s
         # self.scores[self.cur_batch_index.cpu()] = s
 
@@ -37,6 +38,7 @@ class GLUEPruner():
             self.iteration += 1
             return
         def fraction_threshold(tensor, fraction):
+            #返回阈值，例如我从传进来的分数中，选取前百分之90大的，返回这些最大值中的最小值
             threshold, _ = torch.topk(tensor, int((fraction) * len(tensor)))
             return threshold[-1]
 
@@ -56,6 +58,7 @@ class GLUEPruner():
         np.random.shuffle(remain_indices)
         self.cur_index=remain_indices
         self.iteration+=1
+
 
     def pro_loss(self,loss):
         loss *= 1 / self.keep_ratio
