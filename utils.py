@@ -1938,9 +1938,13 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
                 print(f"第{epoch}减少百分之10的数据")
                 data_p = GLUEPruner(dataset=trainset, ratio=0.9)
                 data_p.prune()
+                model_lp = load_model(model_checkpoint, task, device)
+                model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
+                model_lp.to(next(model.parameters()).device)
 
                 train_epoch_iterator2 = get_epoch_dataloader_rely(model_lp, data_p, 0,train_epoch_iterator2)
-                eval_loop()
+                del model_lp
+                # eval_loop()
 
             # epoch_length = tqdm(total=len(train_epoch_iterator2), desc=f"epoch {epoch}")
 
