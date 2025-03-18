@@ -26,7 +26,7 @@ class GLUEPruner():
         s = torch.abs(values.to(dtype=self.scores.dtype).cpu())
         # 更新分数，对传进来的样本对应的索引更新
         # 获取更新的样本个数
-        self.num_updated_samples = self.num_updated_samples + len(values)
+        # self.num_updated_samples = self.num_updated_samples + len(values)
 
         # 打印更新的样本个数
 

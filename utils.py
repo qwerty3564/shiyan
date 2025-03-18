@@ -1868,57 +1868,57 @@ def train_ft_loop34(config, model, train_epoch_iterator, eval_epoch_iterator, op
         if model.metric_1 != None:
             metric_batch[f"{model.metric_1.__class__.__name__}"] = []
             # if epoch%2==0:
-            model_lp = load_model(model_checkpoint, task, device)
-            model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
-            model_lp.to(next(model.parameters()).device)
+        model_lp = load_model(model_checkpoint, task, device)
+        model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
+        model_lp.to(next(model.parameters()).device)
             # 获取剪之后的数据，data_p为剪枝对象，创建之前已经传好了ratio
-            data_p = GLUEPruner(dataset=trainset, ratio=0.5)
-            data_p.prune()
-            train_epoch_iterator2 = get_epoch_dataloader(model_lp, data_p, 0)
+        data_p = GLUEPruner(dataset=trainset, ratio=0.5)
+        data_p.prune()
+        train_epoch_iterator2 = get_epoch_dataloader(model_lp, data_p, 0)
             # del model_lp
             # iterator = iter(train_epoch_iterator2)
             # trange = range(len(train_epoch_iterator2))
 
-            print("开始10轮训练")
-            for epoch in range(10):
-                metric_batch = {}
-                metric_batch['loss'] = []
-                if model.metric != None:
-                    metric_batch[f"{model.metric.__class__.__name__}"] = []
-                if model.metric_1 != None:
-                    metric_batch[f"{model.metric_1.__class__.__name__}"] = []
+        print("开始10轮训练")
+        for epoch in range(10):
+            metric_batch = {}
+            metric_batch['loss'] = []
+            if model.metric != None:
+                metric_batch[f"{model.metric.__class__.__name__}"] = []
+            if model.metric_1 != None:
+                metric_batch[f"{model.metric_1.__class__.__name__}"] = []
                 # model_lp = load_model(model_checkpoint, task, device)
                 # model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
                 # model_lp.to(next(model.parameters()).device)
                 # train_epoch_iterator2 = get_epoch_dataloader(model_lp, data_p, epoch)
                 # del model_lp
-                iterator = iter(train_epoch_iterator2)
-                trange = range(len(train_epoch_iterator2))
-                epoch_length = tqdm(total=len(train_epoch_iterator2), desc=f"epoch {epoch}")
-                for step in trange:
-                    epoch_length.update(1)
-                    inputs = prepare_inputs(next(iterator), device)
-                    model.train()
-                    optimizer.zero_grad()
-                    step_loss, logit, step_metric, step_metric_1, _ = compute_loss(model, inputs)
+            iterator = iter(train_epoch_iterator2)
+            trange = range(len(train_epoch_iterator2))
+            epoch_length = tqdm(total=len(train_epoch_iterator2), desc=f"epoch {epoch}")
+            for step in trange:
+                epoch_length.update(1)
+                inputs = prepare_inputs(next(iterator), device)
+                model.train()
+                optimizer.zero_grad()
+                step_loss, logit, step_metric, step_metric_1, _ = compute_loss(model, inputs)
                     # 惩罚项
-                    loss_history.append(step_loss.item())
-                    step_loss.backward()
-                    train_eval[name1].append(step_metric)
-                    if step_metric_1:
-                        train_eval[name2].append(step_metric_1)
-                    with torch.no_grad():
-                        for name, module in model.named_modules():
-                            if isinstance(module, torch.nn.Linear):
-                                r = compress_ft
-                                module.weight.grad += r * module.weight
+                loss_history.append(step_loss.item())
+                step_loss.backward()
+                train_eval[name1].append(step_metric)
+                if step_metric_1:
+                    train_eval[name2].append(step_metric_1)
+                with torch.no_grad():
+                    for name, module in model.named_modules():
+                        if isinstance(module, torch.nn.Linear):
+                            r = compress_ft
+                            module.weight.grad += r * module.weight
 
-                    optimizer.step()
-                    metric_batch['loss'].append(step_loss.item())
-                    if model.metric != None:
-                        metric_batch[f"{model.metric.__class__.__name__}"].append(list(step_metric.values())[0])
-                    if model.metric_1 != None:
-                        metric_batch[f"{model.metric_1.__class__.__name__}"].append(list(step_metric_1.values())[0])
+                optimizer.step()
+                metric_batch['loss'].append(step_loss.item())
+                if model.metric != None:
+                    metric_batch[f"{model.metric.__class__.__name__}"].append(list(step_metric.values())[0])
+                if model.metric_1 != None:
+                    metric_batch[f"{model.metric_1.__class__.__name__}"].append(list(step_metric_1.values())[0])
 
                     # if step % l == 0:
                     #     s = f'train:epoch({epoch})[{step}]/[{length}] lr {optimizer.state_dict()["param_groups"][0]["lr"]} loss {sum(metric_batch["loss"]) / len(metric_batch["loss"])}'
@@ -1932,21 +1932,21 @@ def train_ft_loop34(config, model, train_epoch_iterator, eval_epoch_iterator, op
                     #             f"{model.metric_1.__class__.__name__}: {sum(metric_batch[model.metric_1.__class__.__name__]) / len(metric_batch[model.metric_1.__class__.__name__])}")
                     #     log.info(s)
                     #     eval_loop()
-                    iter_num += 1
-                epoch_length.close()
-                print(f"********微调epoch{epoch}结束********")
-                eval_loop()
-                print(f"第{epoch}减少百分之10的数据")
+                iter_num += 1
+            epoch_length.close()
+            print(f"********微调epoch{epoch}结束********")
+            eval_loop()
+            print(f"第{epoch}减少百分之10的数据")
                 #                 data_p = GLUEPruner(dataset=trainset, ratio=0.1)
                 #                 data_p.prune()
-                model_lp = load_model(model_checkpoint, task, device)
-                model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
-                model_lp.to(next(model.parameters()).device)
-                data_p.scores = torch.zeros([len(data_p.dataset)]).cpu()
+            model_lp = load_model(model_checkpoint, task, device)
+            model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
+            model_lp.to(next(model.parameters()).device)
+            data_p.scores = torch.zeros([len(data_p.dataset)]).cpu()
 
-                train_epoch_iterator2 = get_epoch_dataloader_rely(model_lp, data_p, 0, train_epoch_iterator2, config,
+            train_epoch_iterator2 = get_epoch_dataloader_rely(model_lp, data_p, 0, train_epoch_iterator2, config,
                                                                   trainset)
-                del model_lp
+            del model_lp
 
 
 #                 eval_loop()
