@@ -1654,7 +1654,7 @@ def  train_ft_loop3(config, model, train_epoch_iterator,eval_epoch_iterator, opt
     log.info(s)
 
 #先训练一轮，载挑选百分之50的数据，再训练10轮，其中每轮数据逐渐减少百分之10
-def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, optimizer, device, log,trainset):
+def train_ft_loop34(config, model, train_epoch_iterator, eval_epoch_iterator, optimizer, device, log, trainset):
     """
     每个epoch后根据损失颗粒选择50%
     example : !python traindata.py --dataset mrpc --seed 3404 --epoch 10 --reg 5e-7 --weight_decay 0.001 --target_ratio 0.5
@@ -1678,6 +1678,7 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
         metric_epoch[f"{model.metric_1.__class__.__name__}"] = []
     compress = config.reg
     compress_ft = config.weight_decay
+
     # Eval Loop
     def eval_loop():
         metric_batch_test = {}
@@ -1746,7 +1747,6 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
                                 f"{model.metric_1.__class__.__name__}: {sum(metric_batch_test[model.metric_1.__class__.__name__]) / len(metric_batch_test[model.metric_1.__class__.__name__])}")
                         log.info(s)
 
-
     # data pruning
     # data_p = GLUEPruner(dataset=trainset, ratio=config.target_ratio)
     # data_p = GLUEPruner(dataset=trainset, ratio=1)
@@ -1754,7 +1754,6 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
     train_iterator = train_epoch_iterator
     model_checkpoint = config.model
     task = config.dataset
-
 
     def get_epoch_dataloader(model_lp, pruner, e):
         loss_g_before = {}
@@ -1795,12 +1794,14 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
         loss_g_gap = {key: loss_g_after[key] - loss_g_before[key] for key in keys}
         del model_lp
         iterator = iter(train_epoch_iterator)
-        # trange = range(len(train_epoch_iterator))
-        trange = range(1)
+        trange = range(len(train_epoch_iterator))
+        #         trange = range(1)
         for step in trange:
             inputs = prepare_inputs(next(iterator), device)
             get_score = operator.itemgetter(*inputs['idx'].tolist())
             step_score = torch.tensor(get_score(loss_g_gap))
+            #             print("step_score为")
+            #             print(step_score)
             pruner.update(step_score, inputs['idx'])
         # if e!=0:
         print(f'修剪前：{len(pruner.cur_index)}')
@@ -1822,9 +1823,9 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
         #     model_lp = load_model(model_checkpoint, task, device)
         #     model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
         #     model_lp.to(next(model.parameters()).device)
-            # 获取剪之后的数据，data_p为剪枝对象，创建之前已经传好了ratio
-            # train_epoch_iterator2 = get_epoch_dataloader(model_lp, data_p, 0)
-            # del model_lp
+        # 获取剪之后的数据，data_p为剪枝对象，创建之前已经传好了ratio
+        # train_epoch_iterator2 = get_epoch_dataloader(model_lp, data_p, 0)
+        # del model_lp
         iterator = iter(train_epoch_iterator)
         trange = range(len(train_epoch_iterator))
         epoch_length = tqdm(total=len(train_epoch_iterator), desc=f"epoch {epoch}")
@@ -1853,7 +1854,6 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
             if model.metric_1 != None:
                 metric_batch[f"{model.metric_1.__class__.__name__}"].append(list(step_metric_1.values())[0])
 
-
             iter_num += 1
         epoch_length.close()
         print(f"********微调epoch{epoch}********预训练结束")
@@ -1867,11 +1867,11 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
             metric_batch[f"{model.metric.__class__.__name__}"] = []
         if model.metric_1 != None:
             metric_batch[f"{model.metric_1.__class__.__name__}"] = []
-                # if epoch%2==0:
+            # if epoch%2==0:
             model_lp = load_model(model_checkpoint, task, device)
             model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
             model_lp.to(next(model.parameters()).device)
-                # 获取剪之后的数据，data_p为剪枝对象，创建之前已经传好了ratio
+            # 获取剪之后的数据，data_p为剪枝对象，创建之前已经传好了ratio
             data_p = GLUEPruner(dataset=trainset, ratio=0.5)
             data_p.prune()
             train_epoch_iterator2 = get_epoch_dataloader(model_lp, data_p, 0)
@@ -1934,79 +1934,91 @@ def  train_ft_loop34(config, model, train_epoch_iterator,eval_epoch_iterator, op
                     #     eval_loop()
                     iter_num += 1
                 epoch_length.close()
-                print(f"********微调epoch{epoch}********")
+                print(f"********微调epoch{epoch}结束********")
+                eval_loop()
                 print(f"第{epoch}减少百分之10的数据")
-                data_p = GLUEPruner(dataset=trainset, ratio=0.9)
-                data_p.prune()
+                #                 data_p = GLUEPruner(dataset=trainset, ratio=0.1)
+                #                 data_p.prune()
                 model_lp = load_model(model_checkpoint, task, device)
                 model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
                 model_lp.to(next(model.parameters()).device)
+                data_p.scores = torch.zeros([len(data_p.dataset)]).cpu()
 
-                train_epoch_iterator2 = get_epoch_dataloader_rely(model_lp, data_p, 0,train_epoch_iterator2)
+                train_epoch_iterator2 = get_epoch_dataloader_rely(model_lp, data_p, 0, train_epoch_iterator2, config,
+                                                                  trainset)
                 del model_lp
-                # eval_loop()
-
-            # epoch_length = tqdm(total=len(train_epoch_iterator2), desc=f"epoch {epoch}")
 
 
-        # eval_loop()
-    # s = f'50% per epoch,initial 100%'
-    # log.info(s)
+#                 eval_loop()
+
+# epoch_length = tqdm(total=len(train_epoch_iterator2), desc=f"epoch {epoch}")
 
 
-def get_epoch_dataloader_rely(model_lp, pruner, e,train_iterator):
-        print("开始逐渐减少百分之10的数据")
-        loss_g_before = {}
-        iterator = iter(train_iterator)
-        trange = range(len(train_iterator))
-        before = tqdm(total=len(train_iterator), desc=f"lp before{e}")
-        for step in trange:
-            before.update(1)
-            inputs = prepare_inputs(next(iterator), device)
-            model_lp.eval()
-            step_idx = inputs["idx"]
-            losses = get_losses(model_lp, inputs)
-            for i in range(len(step_idx)):
-                loss_g_before[step_idx[i].item()] = losses[i].item()
-        before.close()
+# eval_loop()
+# s = f'50% per epoch,initial 100%'
+# log.info(s)
 
-        with torch.no_grad():
-            for name, module in model_lp.named_modules():
-                if isinstance(module, (torch.nn.Linear)):
-                    r = 1 - compress
-                    module.weight.data = r * module.weight.data
 
-        loss_g_after = {}
-        iterator = iter(train_iterator)
-        trange = range(len(train_iterator))
-        after = tqdm(total=len(train_iterator), desc=f"lp after{e}")
-        for step in trange:
-            after.update(1)
-            inputs = prepare_inputs(next(iterator), device)
-            model_lp.eval()
-            step_idx = inputs["idx"]
-            losses = get_losses(model_lp, inputs)
-            for i in range(len(step_idx)):
-                loss_g_after[step_idx[i].item()] = losses[i].item()
-        after.close()
+def get_epoch_dataloader_rely(model_lp, pruner, e, train_iterator, config, trainset):
+    print("开始逐渐减少百分之10的数据")
+    pruner.keep_ratio = 0.9
+    compress = config.reg
+    compress_ft = config.weight_decay
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    loss_g_before = {}
+    iterator = iter(train_iterator)
+    trange = range(len(train_iterator))
+    before = tqdm(total=len(train_iterator), desc=f"lp before{e}")
+    for step in trange:
+        before.update(1)
+        inputs = prepare_inputs(next(iterator), device)
+        model_lp.eval()
+        step_idx = inputs["idx"]
+        losses = get_losses(model_lp, inputs)
+        for i in range(len(step_idx)):
+            loss_g_before[step_idx[i].item()] = losses[i].item()
+    before.close()
 
-        keys = sorted(loss_g_before.keys())
-        loss_g_gap = {key: loss_g_after[key] - loss_g_before[key] for key in keys}
-        del model_lp
-        iterator = iter(train_iterator)
-        trange = range(len(train_iterator))
-        # trange = range(1)
-        for step in trange:
-            inputs = prepare_inputs(next(iterator), device)
-            get_score = operator.itemgetter(*inputs['idx'].tolist())
-            step_score = torch.tensor(get_score(loss_g_gap))
-            pruner.update(step_score, inputs['idx'])
+    with torch.no_grad():
+        for name, module in model_lp.named_modules():
+            if isinstance(module, (torch.nn.Linear)):
+                r = 1 - compress
+                module.weight.data = r * module.weight.data
 
-            print(f'修剪前：{len(pruner.cur_index)}')
-        pruner.prune()
-        print(f'修剪后：{len(pruner.cur_index)}')
-        sampler = pruner.get_sampler()
-        return get_pruned_dataloader(config, trainset, sampler)
+    loss_g_after = {}
+    iterator = iter(train_iterator)
+    trange = range(len(train_iterator))
+    after = tqdm(total=len(train_iterator), desc=f"lp after{e}")
+    for step in trange:
+        after.update(1)
+        inputs = prepare_inputs(next(iterator), device)
+        model_lp.eval()
+        step_idx = inputs["idx"]
+        losses = get_losses(model_lp, inputs)
+        for i in range(len(step_idx)):
+            loss_g_after[step_idx[i].item()] = losses[i].item()
+    after.close()
+
+    keys = sorted(loss_g_before.keys())
+    loss_g_gap = {key: loss_g_after[key] - loss_g_before[key] for key in keys}
+    del model_lp
+    iterator = iter(train_iterator)
+    trange = range(len(train_iterator))
+    print(f'trange为：{trange}')
+    # trange = range(1)
+    for step in trange:
+        inputs = prepare_inputs(next(iterator), device)
+        get_score = operator.itemgetter(*inputs['idx'].tolist())
+        step_score = torch.tensor(get_score(loss_g_gap))
+        pruner.update(step_score, inputs['idx'])
+
+    print(f'修剪前：{len(pruner.cur_index)}')
+    #       上一轮剩下的数据
+    history_len = len(pruner.cur_index)
+    pruner.prune1(history_len)
+    print(f'修剪后：{len(pruner.cur_index)}')
+    sampler = pruner.get_sampler()
+    return get_pruned_dataloader(config, trainset, sampler)
 
 
 # 动态数据剪枝，每个epoch之后选择的数据逐渐减少
