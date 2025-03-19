@@ -1936,17 +1936,17 @@ def train_ft_loop34(config, model, train_epoch_iterator, eval_epoch_iterator, op
             epoch_length.close()
             print(f"********微调epoch{epoch}结束********")
             eval_loop()
-            print(f"第{epoch}减少百分之10的数据")
+            # print(f"第{epoch}减少百分之10的数据")
                 #                 data_p = GLUEPruner(dataset=trainset, ratio=0.1)
                 #                 data_p.prune()
-            model_lp = load_model(model_checkpoint, task, device)
-            model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
-            model_lp.to(next(model.parameters()).device)
-            data_p.scores = torch.zeros([len(data_p.dataset)]).cpu()
-
-            train_epoch_iterator2 = get_epoch_dataloader_rely(model_lp, data_p, 0, train_epoch_iterator2, config,
-                                                                  trainset)
-            del model_lp
+            # model_lp = load_model(model_checkpoint, task, device)
+            # model_lp.load_state_dict(copy.deepcopy(model.state_dict()))
+            # model_lp.to(next(model.parameters()).device)
+            # data_p.scores = torch.zeros([len(data_p.dataset)]).cpu()
+            #
+            # train_epoch_iterator2 = get_epoch_dataloader_rely(model_lp, data_p, 0, train_epoch_iterator2, config,
+            #                                                       trainset)
+            # del model_lp
 
 
 #                 eval_loop()
